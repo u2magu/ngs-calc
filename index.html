@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NGS アバンダク計算ツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        select {
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%9ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        
+        optgroup {
+            background-color: #1e293b;
+            color: #38bdf8;
+            font-weight: bold;
+            font-style: normal;
+        }
+        option {
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 4px;
+        }
+
+        body.theme-dark { background-color: #0f172a; color: #f8fafc; }
+        .theme-dark .card { background-color: #1e293b; border-color: #334155; }
+        .theme-dark select { background-color: #0f172a; color: #f8fafc; border-color: #334155; }
+
+        body.theme-light { background-color: #f1f5f9; color: #0f172a; }
+        .theme-light .card { background-color: #ffffff; border-color: #e2e8f0; }
+        .theme-light select { background-color: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+        .theme-light optgroup { background-color: #e2e8f0; color: #0284c7; }
+        .theme-light option { background-color: #ffffff; color: #0f172a; }
+
+        body.theme-cyber { background-color: #0d0e15; color: #00f0ff; }
+        .theme-cyber .card { background-color: #1a1c29; border-color: #7000ff; }
+        .theme-cyber select { background-color: #0d0e15; color: #00f0ff; border-color: #7000ff; }
+        .theme-cyber optgroup { background-color: #2a085c; color: #ff007f; }
+        .theme-cyber option { background-color: #0d0e15; color: #00f0ff; }
+
+        body.theme-mint { background-color: #e6f4f1; color: #134e4a; }
+        .theme-mint .card { background-color: #ffffff; border-color: #99f6e4; }
+        .theme-mint select { background-color: #f0fdfa; color: #134e4a; border-color: #2dd4bf; }
+        .theme-mint optgroup { background-color: #ccfbf1; color: #0d9488; }
+        .theme-mint option { background-color: #ffffff; color: #134e4a; }
+    </style>
+</head>
+<body id="app-body" class="theme-dark min-h-screen pb-12 font-sans transition-colors duration-300">
+
+    <header class="card border-b sticky top-0 z-50 shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-2.5 flex justify-between items-center gap-3">
+            <h1 class="text-lg md:text-xl font-bold text-cyan-400 flex items-center gap-2">
+                <i class="fa-solid fa-calculator"></i> NGS アバンダク計算ツール
+            </h1>
+            
+            <div class="flex items-center gap-3 text-sm">
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-palette text-amber-400"></i>
+                    <select id="theme-select" onchange="changeTheme(this.value)" class="text-xs p-1.5 rounded-lg border cursor-pointer">
+                        <option value="theme-dark">ダーク</option>
+                        <option value="theme-light">ライト</option>
+                        <option value="theme-cyber">サイバー</option>
+                        <option value="theme-mint">ミント</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 mt-4">
+
+        <!-- コンパクトな上部サマリー -->
+        <section class="card rounded-xl p-3 md:p-4 border shadow-lg mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+            <div class="bg-black/20 p-2.5 rounded-lg border border-white/10 flex flex-col justify-center">
+                <div class="text-[11px] opacity-70 mb-0.5">総特殊能力数 (重複除外)</div>
+                <div id="unique-count" class="text-2xl md:text-3xl font-extrabold text-cyan-400">0</div>
+            </div>
+            <div class="bg-black/20 p-2.5 rounded-lg border border-white/10 flex flex-col justify-center">
+                <div class="text-[11px] opacity-70 mb-0.5">選択済みスロット</div>
+                <div id="filled-slots" class="text-2xl md:text-3xl font-extrabold text-emerald-400">0 / 32</div>
+            </div>
+            <div class="bg-black/20 p-2.5 rounded-lg border border-white/10 flex items-center justify-center">
+                <button id="reset-all-btn" class="w-full h-full min-h-[42px] bg-red-600/20 hover:bg-red-600/40 text-red-400 font-semibold py-2 px-3 rounded-lg border border-red-500/30 transition flex items-center justify-center gap-2 text-xs md:text-sm">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>全選択リセット</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- トースト通知 -->
+        <div id="toast-message" class="fixed bottom-5 right-5 bg-cyan-600 text-white px-4 py-2 rounded-lg shadow-xl text-xs font-semibold opacity-0 transition-opacity duration-300 pointer-events-none z-50"></div>
+
+        <div id="equipment-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Dynamic JavaScript Content -->
+        </div>
+
+    </main>
+
+    <script>
+        const DEFAULT_ABILITY_DATA = [
+            { category: "ハルフィリニア", items: ["エミスハルフィニア", "エミスハルフィニアMN", "アトスハルフィニア", "ロイスハルフィニア"] },
+            { category: "ドレド･キーパ", items: ["アトスドレド・キーパ", "エルガドレド・キーパ", "エルガドレド・キーパMN"] },
+            { category: "ドミナ", items: ["テルフィア･ドミナ", "テルフィア･ドミナMN", "テルフィア･ドミナLC"] },
+            { category: "ソール", items: ["アトスグラディエ･ソール", "エルガグラディエ･ソール", "エルガグラディエ･ソールMN"] },
+            { category: "マエスティ", items: ["アトスギガス･マエスティ", "アトスギガス･マエスティMN", "エルガギガス･マエスティ"] },
+            { category: "ドライエル", items: ["ペタ･ドライエル", "ペタ･ドライエルMN", "ペタ･ドライエルLC"] },
+            { category: "ユディ:パルフト", items: ["ユディ･アムパルフト", "ユディ･ガーディパルフト", "ユディ･スタパルフト", "ユディ･スタピパルフト", "ユディ･スピパルフト", "ユディ･レジパルフト"] },
+            { category: "ユディ:ダシャ", items: ["ユディ･アムダシャ", "ユディ･ガディダシャ", "ユディ･スタダシャ", "ユディ･スタピダシャ", "ユディ･スピダシャ", "ユディ･レジダシャ"] },
+            { category: "ユディ:ダホウ", items: ["ユディ･アムダホウ", "ユディ･ガディダホウ", "ユディ･スタダホウ", "ユディ･スタピダホウ", "ユディ･スピダホウ", "ユディ･レジダホウ"] },
+            { category: "ユディ:シャホウ", items: ["ユディ･アムシャホウ", "ユディ･ガディシャホウ", "ユディ･スタシャホウ", "ユディ･スタピシャホウ", "ユディ･スピシャホウ", "ユディ･レジシャホウ"] },
+            { category: "ユーゼ:パルフト", items: ["ユーゼ･アムパルフト", "ユーゼ･ガーディパルフト", "ユーゼ･スタパルフト", "ユーゼ･スタピパルフト", "ユーゼ･スピパルフト", "ユーゼ･レジパルフト"] },
+            { category: "ユーゼ:ダシャ", items: ["ユーゼ･アムダシャ", "ユーゼ･ガディダシャ", "ユーゼ･スタダシャ", "ユーゼ･スタピダシャ", "ユーゼ･スピダシャ", "ユーゼ･レジダシャ"] },
+            { category: "ユーゼ:ダホウ", items: ["ユーゼ･アムダホウ", "ユーゼ･ガディダホウ", "ユーゼ･スタダホウ", "ユーゼ･スタピダホウ", "ユーゼ･スピダホウ", "ユーゼ･レジダホウ"] },
+            { category: "ユーゼ:シャホウ", items: ["ユーゼ･アムシャホウ", "ユーゼ･ガディシャホウ", "ユーゼ･スタシャホウ", "ユーゼ･スタピシャホウ", "ユーゼ･スピシャホウ", "ユーゼ･レジシャホウ"] },
+            { category: "ラディ:パルフト", items: ["ラディ･アムパルフト", "ラディ･ガーディパルフト", "ラディ･スタパルフト", "ラディ･スタピパルフト", "ラディ･スピパルフト", "ラディ･レジパルフト"] },
+            { category: "ラディ:ダシャ", items: ["ラディ･アムダシャ", "ラディ･ガディダシャ", "ラディ･スタダシャ", "ラディ･スタピダシャ", "ラディ･スピダシャ", "ラディ･レジダシャ"] },
+            { category: "ラディ:ダホウ", items: ["ラディ･アムダホウ", "ラディ･ガディダホウ", "ラディ･スタダホウ", "ラディ･スタピダホウ", "ラディ･スピダホウ", "ラディ･レジダホウ"] },
+            { category: "ラディ:シャホウ", items: ["ラディ･アムシャホウ", "ラディ･ガディシャホウ", "ラディ･スタシャホウ", "ラディ･スタピシャホウ", "ラディ･スピシャホウ", "ラディ･レジシャホウ"] },
+            { category: "ラーゼ:パルフト", items: ["ラーゼ･アムパルフト", "ラーゼ･ガーディパルフト", "ラーゼ･スタパルフト", "ラーゼ･スタピパルフト", "ラーゼ･スピパルフト", "ラーゼ･レジパルフト"] },
+            { category: "ラーゼ:ダシャ", items: ["ラーゼ･アムダシャ", "ラーゼ･ガディダシャ", "ラーゼ･スタダシャ", "ラーゼ･スタピダシャ", "ラーゼ･スピダシャ", "ラーゼ･レジダシャ"] },
+            { category: "ラーゼ:ダホウ", items: ["ラーゼ･アムダホウ", "ラーゼ･ガディダホウ", "ラーゼ･スタダホウ", "ラーゼ･スタピダシャ", "ラーゼ･スピダホウ", "ラーゼ･レジダホウ"] },
+            { category: "ラーゼ:シャホウ", items: ["ラーゼ･アムシャホウ", "ラーゼ･ガディシャホウ", "ラーゼ･スタシャホウ", "ラーゼ･スタピシャホウ", "ラーゼ･スピシャホウ", "ラーゼ･レジシャホウ"] },
+            { category: "EXOP", items: ["EXOP1", "EXOP2", "EXOP3"] }
+        ];
+
+        const EQUIPMENTS = [
+            { id: "weapon", name: "武器", isWeapon: true },
+            { id: "armor1", name: "防具 1", isWeapon: false },
+            { id: "armor2", name: "防具 2", isWeapon: false },
+            { id: "armor3", name: "防具 3", isWeapon: false }
+        ];
+
+        let masterData = DEFAULT_ABILITY_DATA;
+
+        window.addEventListener("DOMContentLoaded", () => {
+            renderEquipmentCards();
+            bindGlobalEvents();
+            restoreAutoSave();
+            calculateSummary();
+        });
+
+        function changeTheme(themeClass) {
+            document.getElementById("app-body").className = `${themeClass} min-h-screen pb-12 font-sans transition-colors duration-300`;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast-message");
+            toast.textContent = msg;
+            toast.classList.remove("opacity-0");
+            toast.classList.add("opacity-100");
+            setTimeout(() => {
+                toast.classList.remove("opacity-100");
+                toast.classList.add("opacity-0");
+            }, 2000);
+        }
+
+        function buildOptionsHTML() {
+            let html = `<option value="">-- 未選択 --</option>`;
+            masterData.forEach(group => {
+                html += `<optgroup label="■ ${group.category}">`;
+                group.items.forEach(item => {
+                    html += `<option value="${item}">${item}</option>`;
+                });
+                html += `</optgroup>`;
+            });
+            return html;
+        }
+
+        function renderEquipmentCards() {
+            const container = document.getElementById("equipment-container");
+            const optionsHTML = buildOptionsHTML();
+
+            container.innerHTML = EQUIPMENTS.map(eq => `
+                <div class="card rounded-xl p-4 border shadow-md flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4 pb-2 border-b border-white/10">
+                            <h2 class="text-lg font-bold text-cyan-400 flex items-center gap-2">
+                                <i class="fa-solid ${eq.isWeapon ? 'fa-shield-halberd' : 'fa-shield'}"></i>
+                                ${eq.name}
+                            </h2>
+                            <div class="flex gap-2">
+                                <button onclick="copyToAll('${eq.id}')" class="text-xs bg-cyan-700/40 hover:bg-cyan-600/60 border border-cyan-500/40 px-2.5 py-1 rounded transition">
+                                    <i class="fa-solid fa-copy"></i> 全複製
+                                </button>
+                                <button onclick="clearEquipment('${eq.id}')" class="text-xs bg-red-700/30 hover:bg-red-600/50 text-red-300 border border-red-500/30 px-2.5 py-1 rounded transition">
+                                    <i class="fa-solid fa-eraser"></i> クリア
+                                </button>
+                            </div>
+                        </div>
+
+                        ${eq.isWeapon ? `
+                        <div class="mb-4 bg-black/20 p-2.5 rounded-lg border border-white/10 flex items-center justify-between h-[42px]">
+                            <span class="text-xs text-amber-300 font-medium flex items-center gap-1.5">
+                                <i class="fa-solid fa-bolt"></i> EXOP1~3 自動入力
+                            </span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="exop-toggle" onchange="toggleExop(this.checked)" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-600"></div>
+                            </label>
+                        </div>
+                        ` : `
+                        <div class="mb-4 h-[42px]"></div>
+                        `}
+
+                        <div class="space-y-2">
+                            ${Array.from({ length: 8 }).map((_, i) => `
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-semibold opacity-60 w-5 text-right">${i + 1}</span>
+                                    <select id="${eq.id}-slot-${i}" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs md:text-sm p-2 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                        ${optionsHTML}
+                                    </select>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleExop(enabled) {
+            const exops = ["EXOP1", "EXOP2", "EXOP3"];
+            exops.forEach((exop, idx) => {
+                const select = document.getElementById(`weapon-slot-${idx}`);
+                if (select) {
+                    if (enabled) select.value = exop;
+                    else if (select.value === exop) select.value = "";
+                }
+            });
+            calculateSummary();
+        }
+
+        function clearEquipment(eqId) {
+            for (let i = 0; i < 8; i++) {
+                const select = document.getElementById(`${eqId}-slot-${i}`);
+                if (select) select.value = "";
+            }
+            if (eqId === 'weapon') {
+                const toggle = document.getElementById("exop-toggle");
+                if (toggle) toggle.checked = false;
+            }
+            calculateSummary();
+        }
+
+        function copyToAll(srcEqId) {
+            const srcValues = [];
+            for (let i = 0; i < 8; i++) {
+                srcValues.push(document.getElementById(`${srcEqId}-slot-${i}`).value);
+            }
+
+            EQUIPMENTS.forEach(eq => {
+                if (eq.id !== srcEqId) {
+                    for (let i = 0; i < 8; i++) {
+                        const select = document.getElementById(`${eq.id}-slot-${i}`);
+                        if (select) select.value = srcValues[i];
+                    }
+                }
+            });
+            calculateSummary();
+        }
+
+        function getCurrentState() {
+            const state = {};
+            EQUIPMENTS.forEach(eq => {
+                state[eq.id] = [];
+                for (let i = 0; i < 8; i++) {
+                    const select = document.getElementById(`${eq.id}-slot-${i}`);
+                    state[eq.id].push(select ? select.value : "");
+                }
+            });
+            return state;
+        }
+
+        function applyState(state) {
+            if (!state) return;
+            EQUIPMENTS.forEach(eq => {
+                if (state[eq.id]) {
+                    for (let i = 0; i < 8; i++) {
+                        const select = document.getElementById(`${eq.id}-slot-${i}`);
+                        if (select) select.value = state[eq.id][i] || "";
+                    }
+                }
+            });
+            calculateSummary();
+        }
+
+        function calculateSummary() {
+            const selectedAbilities = new Set();
+            let filledCount = 0;
+
+            EQUIPMENTS.forEach(eq => {
+                for (let i = 0; i < 8; i++) {
+                    const select = document.getElementById(`${eq.id}-slot-${i}`);
+                    if (select && select.value) {
+                        filledCount++;
+                        selectedAbilities.add(select.value);
+                    }
+                }
+            });
+
+            document.getElementById("unique-count").textContent = selectedAbilities.size;
+            document.getElementById("filled-slots").textContent = `${filledCount} / 32`;
+
+            // 自動保存 (ローカルストレージ)
+            try {
+                localStorage.setItem("ngs_calc_autosave", JSON.stringify(getCurrentState()));
+            } catch (e) {}
+        }
+
+        function restoreAutoSave() {
+            try {
+                const saved = localStorage.getItem("ngs_calc_autosave");
+                if (saved) {
+                    applyState(JSON.parse(saved));
+                }
+            } catch (e) {}
+        }
+
+        function bindGlobalEvents() {
+            document.getElementById("reset-all-btn").addEventListener("click", () => {
+                EQUIPMENTS.forEach(eq => clearEquipment(eq.id));
+                showToast("全選択をリセットしました");
+            });
+        }
+    </script>
+</body>
+</html>
