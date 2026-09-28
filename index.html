@@ -74,8 +74,8 @@
 
     <main class="max-w-6xl mx-auto px-4 mt-4">
 
-        <!-- コンパクトな上部サマリー -->
-        <section class="card rounded-xl p-3 md:p-4 border shadow-lg mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+        <!-- 上部サマリー -->
+        <section class="card rounded-xl p-3 md:p-4 border shadow-lg mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
             <div class="bg-black/20 p-2.5 rounded-lg border border-white/10 flex flex-col justify-center">
                 <div class="text-[11px] opacity-70 mb-0.5">総特殊能力数 (重複除外)</div>
                 <div id="unique-count" class="text-2xl md:text-3xl font-extrabold text-cyan-400">0</div>
@@ -92,11 +92,8 @@
             </div>
         </section>
 
-        <!-- トースト通知 -->
-        <div id="toast-message" class="fixed bottom-5 right-5 bg-cyan-600 text-white px-4 py-2 rounded-lg shadow-xl text-xs font-semibold opacity-0 transition-opacity duration-300 pointer-events-none z-50"></div>
-
         <div id="equipment-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Dynamic JavaScript Content -->
+            <!-- JavaScript dynamically inserts weapon and armor sections here -->
         </div>
 
     </main>
@@ -146,17 +143,6 @@
 
         function changeTheme(themeClass) {
             document.getElementById("app-body").className = `${themeClass} min-h-screen pb-12 font-sans transition-colors duration-300`;
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById("toast-message");
-            toast.textContent = msg;
-            toast.classList.remove("opacity-0");
-            toast.classList.add("opacity-100");
-            setTimeout(() => {
-                toast.classList.remove("opacity-100");
-                toast.classList.add("opacity-0");
-            }, 2000);
         }
 
         function buildOptionsHTML() {
@@ -305,25 +291,20 @@
             document.getElementById("unique-count").textContent = selectedAbilities.size;
             document.getElementById("filled-slots").textContent = `${filledCount} / 32`;
 
-            // 自動保存 (ローカルストレージ)
-            try {
-                localStorage.setItem("ngs_calc_autosave", JSON.stringify(getCurrentState()));
-            } catch (e) {}
+            // 自動保存
+            localStorage.setItem("ngs_calc_autosave", JSON.stringify(getCurrentState()));
         }
 
         function restoreAutoSave() {
-            try {
-                const saved = localStorage.getItem("ngs_calc_autosave");
-                if (saved) {
-                    applyState(JSON.parse(saved));
-                }
-            } catch (e) {}
+            const saved = localStorage.getItem("ngs_calc_autosave");
+            if (saved) {
+                try { applyState(JSON.parse(saved)); } catch (e) {}
+            }
         }
 
         function bindGlobalEvents() {
             document.getElementById("reset-all-btn").addEventListener("click", () => {
                 EQUIPMENTS.forEach(eq => clearEquipment(eq.id));
-                showToast("全選択をリセットしました");
             });
         }
     </script>
