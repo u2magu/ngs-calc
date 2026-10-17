@@ -14,7 +14,7 @@
             background-size: 1.5em 1.5em;
             padding-right: 2.5rem;
         }
-        
+
         optgroup {
             background-color: #1e293b;
             color: #38bdf8;
@@ -30,22 +30,26 @@
         body.theme-dark { background-color: #0f172a; color: #f8fafc; }
         .theme-dark .card { background-color: #1e293b; border-color: #334155; }
         .theme-dark select { background-color: #0f172a; color: #f8fafc; border-color: #334155; }
+        .theme-dark .field-input { background-color: #0f172a; color: #f8fafc; border-color: #334155; }
 
         body.theme-light { background-color: #f1f5f9; color: #0f172a; }
         .theme-light .card { background-color: #ffffff; border-color: #e2e8f0; }
         .theme-light select { background-color: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+        .theme-light .field-input { background-color: #ffffff; color: #0f172a; border-color: #cbd5e1; }
         .theme-light optgroup { background-color: #e2e8f0; color: #0284c7; }
         .theme-light option { background-color: #ffffff; color: #0f172a; }
 
         body.theme-cyber { background-color: #0d0e15; color: #00f0ff; }
         .theme-cyber .card { background-color: #1a1c29; border-color: #7000ff; }
         .theme-cyber select { background-color: #0d0e15; color: #00f0ff; border-color: #7000ff; }
+        .theme-cyber .field-input { background-color: #0d0e15; color: #00f0ff; border-color: #7000ff; }
         .theme-cyber optgroup { background-color: #2a085c; color: #ff007f; }
         .theme-cyber option { background-color: #0d0e15; color: #00f0ff; }
 
         body.theme-mint { background-color: #e6f4f1; color: #134e4a; }
         .theme-mint .card { background-color: #ffffff; border-color: #99f6e4; }
         .theme-mint select { background-color: #f0fdfa; color: #134e4a; border-color: #2dd4bf; }
+        .theme-mint .field-input { background-color: #f0fdfa; color: #134e4a; border-color: #2dd4bf; }
         .theme-mint optgroup { background-color: #ccfbf1; color: #0d9488; }
         .theme-mint option { background-color: #ffffff; color: #134e4a; }
     </style>
@@ -57,8 +61,11 @@
             <h1 class="text-lg md:text-xl font-bold text-cyan-400 flex items-center gap-2">
                 <i class="fa-solid fa-calculator"></i> NGS アバンダク計算ツール
             </h1>
-            
-            <div class="flex items-center gap-3 text-sm">
+
+            <div class="flex items-center gap-2 text-sm">
+                <button id="manage-abilities-btn" class="text-xs bg-cyan-700/40 hover:bg-cyan-600/60 border border-cyan-500/40 px-2.5 py-1.5 rounded transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders"></i> <span class="hidden sm:inline">能力管理</span>
+                </button>
                 <div class="flex items-center gap-1.5">
                     <i class="fa-solid fa-palette text-amber-400"></i>
                     <select id="theme-select" onchange="changeTheme(this.value)" class="text-xs p-1.5 rounded-lg border cursor-pointer">
@@ -101,7 +108,68 @@
 
     </main>
 
+    <!-- 能力データ管理モーダル -->
+    <div id="ability-modal" class="hidden fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4" onclick="if(event.target===this)closeManageModal()">
+        <div class="card rounded-xl border shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-white/10">
+                <h2 class="font-bold text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> カスタム能力管理
+                </h2>
+                <button onclick="closeManageModal()" class="w-8 h-8 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-300 border border-red-500/30 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-4 space-y-4 overflow-y-auto">
+                <!-- 追加フォーム -->
+                <div class="bg-black/20 p-3 rounded-lg border border-white/10 space-y-2">
+                    <label class="text-xs opacity-70 block">カテゴリ (既存から選択 or 新規入力)</label>
+                    <input id="custom-category-input" list="category-list" type="text" class="field-input w-full rounded-lg text-sm p-2 border" placeholder="例: ユディ:ダホウ / 新カテゴリ名">
+                    <datalist id="category-list"></datalist>
+
+                    <label class="text-xs opacity-70 block">能力名</label>
+                    <input id="custom-ability-input" type="text" class="field-input w-full rounded-lg text-sm p-2 border" placeholder="例: ユディ･ネクストダホウ">
+
+                    <button onclick="addCustomAbility()" class="w-full bg-cyan-700/40 hover:bg-cyan-600/60 border border-cyan-500/40 font-semibold py-2 rounded-lg transition text-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> 追加
+                    </button>
+                </div>
+
+                <!-- 登録済みカスタム能力 -->
+                <div>
+                    <div class="text-xs opacity-70 mb-2">カスタム登録済み (× で削除)</div>
+                    <div id="custom-list" class="space-y-2 text-xs"></div>
+                </div>
+
+                <!-- バックアップ -->
+                <div class="bg-black/20 p-3 rounded-lg border border-white/10 space-y-2">
+                    <div class="text-xs opacity-70">バックアップ (JSON) — 他PCへの移行・共有に</div>
+                    <textarea id="custom-json" class="field-input w-full rounded-lg text-xs p-2 border h-24 font-mono" placeholder="エクスポートでJSON出力 / 貼り付けてインポート"></textarea>
+                    <div class="flex gap-2">
+                        <button onclick="exportCustomData()" class="flex-1 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 py-1.5 rounded text-xs transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-download"></i> エクスポート
+                        </button>
+                        <button onclick="importCustomData()" class="flex-1 bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 py-1.5 rounded text-xs transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-upload"></i> インポート
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ============================================================
+        // ▼ 特殊能力データ (ここを編集して能力を追加/変更できます)
+        //    形式: { category: "カテゴリ名", items: ["能力名A", "能力名B", ...] }
+        //
+        //    ・新しい能力を追加する場合は、該当カテゴリの items に "能力名" を追記
+        //    ・カテゴリ自体を追加する場合は 1 行まるごとコピーして書き換え
+        //    ・※ 選択状態は「能力名」で保存されるため、既存の名前を変更すると
+        //       過去に選んでいたスロットが未選択に戻ります
+        //    ・※ コードを触りたくない場合は、画面右上の「能力管理」から
+        //       ブラウザ上で追加/削除もできます (localStorage に保存)
+        // ============================================================
         const DEFAULT_ABILITY_DATA = [
             { category: "ハルフィリニア", items: ["エミスハルフィニア", "エミスハルフィニアS", "エミスハルフィニアMN", "アトスハルフィニア", "ロイスハルフィニア", "ロイスハルフィニアS"] },
             { category: "ドレド･キーパ", items: ["アトスドレド・キーパ", "エルガドレド・キーパ", "エルガドレド・キーパMN"] },
@@ -123,7 +191,7 @@
             { category: "ラディ:シャホウ", items: ["ラディ･アムシャホウ", "ラディ･ガディシャホウ", "ラディ･スタシャホウ", "ラディ･スタピシャホウ", "ラディ･スピシャホウ", "ラディ･レジシャホウ"] },
             { category: "ラーゼ:パルフト", items: ["ラーゼ･アムパルフト", "ラーゼ･ガーディパルフト", "ラーゼ･スタパルフト", "ラーゼ･スタピパルフト", "ラーゼ･スピパルフト", "ラーゼ･レジパルフト"] },
             { category: "ラーゼ:ダシャ", items: ["ラーゼ･アムダシャ", "ラーゼ･ガディダシャ", "ラーゼ･スタダシャ", "ラーゼ･スタピダシャ", "ラーゼ･スピダシャ", "ラーゼ･レジダシャ"] },
-            { category: "ラーゼ:ダホウ", items: ["ラーゼ･アムダホウ", "ラーゼ･ガディダホウ", "ラーゼ･スタダホウ", "ラーゼ･スタピダシャ", "ラーゼ･スピダホウ", "ラーゼ･レジダホウ"] },
+            { category: "ラーゼ:ダホウ", items: ["ラーゼ･アムダホウ", "ラーゼ･ガディダホウ", "ラーゼ･スタダホウ", "ラーゼ･スタピダホウ", "ラーゼ･スピダホウ", "ラーゼ･レジダホウ"] },
             { category: "ラーゼ:シャホウ", items: ["ラーゼ･アムシャホウ", "ラーゼ･ガディシャホウ", "ラーゼ･スタシャホウ", "ラーゼ･スタピシャホウ", "ラーゼ･スピシャホウ", "ラーゼ･レジシャホウ"] },
             { category: "EXOP", items: ["EXOP1", "EXOP2", "EXOP3"] }
         ];
@@ -135,17 +203,24 @@
             { id: "armor3", name: "防具 3", isWeapon: false }
         ];
 
+        const THEME_KEY = "ngs_calc_theme";
+        const CUSTOM_DATA_KEY = "ngs_calc_custom_abilities";
+
         let masterData = DEFAULT_ABILITY_DATA;
+        let customData = []; // [{ category, items: [] }] ユーザー追加分
 
         window.addEventListener("DOMContentLoaded", () => {
+            loadCustomData();
+            restoreTheme();
             renderEquipmentCards();
             bindGlobalEvents();
             restoreAutoSave();
             calculateSummary();
         });
 
-        function changeTheme(themeClass) {
-            document.getElementById("app-body").className = `${themeClass} min-h-screen pb-12 font-sans transition-colors duration-300`;
+        // ---------- ユーティリティ ----------
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
         }
 
         function showToast(msg) {
@@ -159,12 +234,180 @@
             }, 2000);
         }
 
+        // ---------- テーマ ----------
+        function changeTheme(themeClass) {
+            document.getElementById("app-body").className = `${themeClass} min-h-screen pb-12 font-sans transition-colors duration-300`;
+            try {
+                localStorage.setItem(THEME_KEY, themeClass);
+            } catch (e) {}
+        }
+
+        function restoreTheme() {
+            try {
+                const saved = localStorage.getItem(THEME_KEY);
+                if (saved) changeTheme(saved);
+            } catch (e) {}
+        }
+
+        // ---------- カスタム能力データ ----------
+        function loadCustomData() {
+            try {
+                const saved = localStorage.getItem(CUSTOM_DATA_KEY);
+                const parsed = saved ? JSON.parse(saved) : [];
+                if (Array.isArray(parsed)) {
+                    customData = parsed.filter(g =>
+                        g && typeof g.category === "string" &&
+                        Array.isArray(g.items) && g.items.every(i => typeof i === "string")
+                    );
+                }
+            } catch (e) {
+                customData = [];
+            }
+        }
+
+        function saveCustomData() {
+            try {
+                localStorage.setItem(CUSTOM_DATA_KEY, JSON.stringify(customData));
+            } catch (e) {}
+            refreshSelectOptions();
+        }
+
+        // デフォルト + カスタム をマージ (同カテゴリ名は統合・重複排除)
+        function getAllData() {
+            const merged = masterData.map(g => ({ category: g.category, items: [...g.items] }));
+            customData.forEach(cg => {
+                const existing = merged.find(g => g.category === cg.category);
+                if (existing) {
+                    cg.items.forEach(it => {
+                        if (!existing.items.includes(it)) existing.items.push(it);
+                    });
+                } else {
+                    merged.push({ category: cg.category, items: [...cg.items] });
+                }
+            });
+            return merged;
+        }
+
+        function addCustomAbility() {
+            const cat = document.getElementById("custom-category-input").value.trim();
+            const name = document.getElementById("custom-ability-input").value.trim();
+            if (!cat || !name) {
+                showToast("カテゴリと能力名を両方入力してください");
+                return;
+            }
+            const all = getAllData();
+            const g = all.find(x => x.category === cat);
+            if (g && g.items.includes(name)) {
+                showToast("その能力は既に存在します");
+                return;
+            }
+            let cg = customData.find(x => x.category === cat);
+            if (!cg) {
+                cg = { category: cat, items: [] };
+                customData.push(cg);
+            }
+            cg.items.push(name);
+            saveCustomData();
+            document.getElementById("custom-ability-input").value = "";
+            showToast(`「${name}」を追加しました`);
+        }
+
+        function deleteCustomAbility(cat, item) {
+            const cg = customData.find(x => x.category === cat);
+            if (!cg) return;
+            cg.items = cg.items.filter(i => i !== item);
+            if (!cg.items.length) {
+                customData = customData.filter(x => x !== cg);
+            }
+            saveCustomData();
+            renderModalData();
+            showToast(`「${item}」を削除しました`);
+        }
+
+        function exportCustomData() {
+            document.getElementById("custom-json").value = JSON.stringify(customData, null, 2);
+            showToast("JSONをテキスト欄に出力しました");
+        }
+
+        function importCustomData() {
+            const raw = document.getElementById("custom-json").value.trim();
+            if (!raw) {
+                showToast("JSONを貼り付けてください");
+                return;
+            }
+            try {
+                let parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed) && parsed && Array.isArray(parsed.data)) parsed = parsed.data;
+                const valid = parsed.filter(g =>
+                    g && typeof g.category === "string" &&
+                    Array.isArray(g.items) && g.items.every(i => typeof i === "string")
+                );
+                if (!valid.length) throw new Error("format");
+                let added = 0;
+                valid.forEach(cg => {
+                    let target = customData.find(x => x.category === cg.category);
+                    if (!target) {
+                        target = { category: cg.category, items: [] };
+                        customData.push(target);
+                    }
+                    cg.items.forEach(it => {
+                        if (!target.items.includes(it)) {
+                            target.items.push(it);
+                            added++;
+                        }
+                    });
+                });
+                saveCustomData();
+                renderModalData();
+                showToast(`${added}件のカスタム能力をインポートしました`);
+            } catch (e) {
+                showToast("JSONの形式が正しくありません");
+            }
+        }
+
+        // ---------- モーダル ----------
+        function openManageModal() {
+            renderModalData();
+            document.getElementById("ability-modal").classList.remove("hidden");
+        }
+
+        function closeManageModal() {
+            document.getElementById("ability-modal").classList.add("hidden");
+        }
+
+        function renderModalData() {
+            // カテゴリ候補 (datalist)
+            document.getElementById("category-list").innerHTML =
+                getAllData().map(g => `<option value="${escapeHtml(g.category)}"></option>`).join("");
+
+            // 登録済みリスト
+            const list = document.getElementById("custom-list");
+            if (!customData.length) {
+                list.innerHTML = `<div class="opacity-50 py-2">登録なし</div>`;
+                return;
+            }
+            list.innerHTML = customData.map(g => `
+                <div class="bg-black/20 rounded-lg p-2 border border-white/10">
+                    <div class="font-semibold text-cyan-400 mb-1.5">■ ${escapeHtml(g.category)}</div>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${g.items.map(it => `
+                            <span class="inline-flex items-center gap-1.5 bg-cyan-900/40 border border-cyan-700/40 rounded px-2 py-0.5">
+                                ${escapeHtml(it)}
+                                <button onclick="deleteCustomAbility('${escapeHtml(g.category)}','${escapeHtml(it)}')" class="text-red-400 hover:text-red-300 font-bold" title="削除">×</button>
+                            </span>
+                        `).join("")}
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        // ---------- 描画 ----------
         function buildOptionsHTML() {
             let html = `<option value="">-- 未選択 --</option>`;
-            masterData.forEach(group => {
-                html += `<optgroup label="■ ${group.category}">`;
+            getAllData().forEach(group => {
+                html += `<optgroup label="■ ${escapeHtml(group.category)}">`;
                 group.items.forEach(item => {
-                    html += `<option value="${item}">${item}</option>`;
+                    html += `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`;
                 });
                 html += `</optgroup>`;
             });
@@ -222,6 +465,25 @@
             `).join('');
         }
 
+        // データ変更後に全セレクトを張り直す (選択値は可能な限り維持)
+        function refreshSelectOptions() {
+            const optionsHTML = buildOptionsHTML();
+            let lost = false;
+            EQUIPMENTS.forEach(eq => {
+                for (let i = 0; i < 8; i++) {
+                    const select = document.getElementById(`${eq.id}-slot-${i}`);
+                    if (!select) continue;
+                    const current = select.value;
+                    select.innerHTML = optionsHTML;
+                    select.value = current;
+                    if (current && select.value !== current) lost = true;
+                }
+            });
+            calculateSummary();
+            if (lost) showToast("削除された能力の選択を未選択にしました");
+        }
+
+        // ---------- 操作 ----------
         function toggleExop(enabled) {
             const exops = ["EXOP1", "EXOP2", "EXOP3"];
             exops.forEach((exop, idx) => {
@@ -234,14 +496,22 @@
             calculateSummary();
         }
 
+        function syncExopToggle() {
+            const toggle = document.getElementById("exop-toggle");
+            if (!toggle) return;
+            const exops = ["EXOP1", "EXOP2", "EXOP3"];
+            let matched = true;
+            exops.forEach((exop, idx) => {
+                const select = document.getElementById(`weapon-slot-${idx}`);
+                if (!select || select.value !== exop) matched = false;
+            });
+            toggle.checked = matched;
+        }
+
         function clearEquipment(eqId) {
             for (let i = 0; i < 8; i++) {
                 const select = document.getElementById(`${eqId}-slot-${i}`);
                 if (select) select.value = "";
-            }
-            if (eqId === 'weapon') {
-                const toggle = document.getElementById("exop-toggle");
-                if (toggle) toggle.checked = false;
             }
             calculateSummary();
         }
@@ -305,6 +575,8 @@
             document.getElementById("unique-count").textContent = selectedAbilities.size;
             document.getElementById("filled-slots").textContent = `${filledCount} / 32`;
 
+            syncExopToggle();
+
             // 自動保存 (ローカルストレージ)
             try {
                 localStorage.setItem("ngs_calc_autosave", JSON.stringify(getCurrentState()));
@@ -325,6 +597,8 @@
                 EQUIPMENTS.forEach(eq => clearEquipment(eq.id));
                 showToast("全選択をリセットしました");
             });
+
+            document.getElementById("manage-abilities-btn").addEventListener("click", openManageModal);
         }
     </script>
 </body>
