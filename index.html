@@ -98,7 +98,7 @@
                 </button>
             </div>
             <div class="sm:col-span-3 bg-black/20 p-2.5 rounded-lg border border-white/10 text-left">
-                <div class="text-[11px] opacity-70 mb-1">数値合算 (全装備ぶんの累計・S は原種と同数値 / MNS は MN と同数値・EXOP は型別 H/P/X/D/R のみ計上)</div>
+                <div class="text-[11px] opacity-70 mb-1">数値合算 (全装備ぶんの累計・S は原種と同数値 / MNS は MN と同数値 / EXⅢ は「EXⅢ 手動入力」から計上)</div>
                 <div id="stat-totals" class="flex flex-wrap gap-1.5 text-xs font-semibold text-cyan-200 text-left"><span class="opacity-50 text-xs">未選択</span></div>
             </div>
         </section>
@@ -197,7 +197,7 @@
             { category: "ラーゼ:ダシャ", items: ["ラーゼ･アムダシャ", "ラーゼ･ガディダシャ", "ラーゼ･スタダシャ", "ラーゼ･スタピダシャ", "ラーゼ･スピダシャ", "ラーゼ･レジダシャ"] },
             { category: "ラーゼ:ダホウ", items: ["ラーゼ･アムダホウ", "ラーゼ･ガディダホウ", "ラーゼ･スタダホウ", "ラーゼ･スタピダホウ", "ラーゼ･スピダホウ", "ラーゼ･レジダホウ"] },
             { category: "ラーゼ:シャホウ", items: ["ラーゼ･アムシャホウ", "ラーゼ･ガディシャホウ", "ラーゼ･スタシャホウ", "ラーゼ･スタピシャホウ", "ラーゼ･スピシャホウ", "ラーゼ･レジシャホウ"] },
-            { category: "EXOP", items: ["EXOP1", "EXOP2", "EXOP3", "EXOP(H)", "EXOP(P)", "EXOP(X)", "EXOP(D)", "EXOP(R)"] }
+            { category: "EXOP", items: ["EXOP1", "EXOP2", "EXOP3"] }
         ];
 
 
@@ -207,8 +207,8 @@
         //    ・数値は装備 1 点ぶん。選択した全スロットぶん合算してサマリーに表示する
         //    ・HP / PP は絶対値、威力 / 打撃 / 射撃 / 法撃 / 下限 / クリ / ダ耐 / 状態 / 環境 は % 表記
         //    ・「S」は原種と同じ数値、「MNS」は「MN」と同じ数値として計上
-        //    ・EXOP の型別 (H/P/X/D/R) は全武器共通の数値で登録済み。EXOP1〜3 は型が
-        //      判別できないため数値なし (種類数のみ計上)
+        //    ・EXOP1〜3 は種類数のみ計上。EXⅢ の数値は「EXⅢ 手動入力」で
+        //      共通威力 (6.0/6.25/6.5% ×3枠) と型ロール (H/P/X/D/R/A) を加算
         //    ・数値未収録の「エミスギガス･マエスティ」とカスタム能力は未登録 (集計から除外される)
         //    ・※ 既存の能力名を変更すると選択状態が復元できなくなるため、キーは能力名そのまま
         // ============================================================
@@ -339,21 +339,23 @@
             "ラーゼ･スタピシャホウ": { HP: 10, PP: 3, 射撃: 6.5, 法撃: 6.5 },
             "ラーゼ･スピシャホウ": { PP: 6, 射撃: 6.5, 法撃: 6.5 },
             "ラーゼ･レジシャホウ": { 射撃: 6.5, 法撃: 6.5, 状態: 20 },
-            // EX特殊能力 型別 (swiki:「EX（全種）」= 全武器共通の数値)
-            // ・共通: 威力+4.54% / 威力下限補正+2.0%
-            // ・EXOP1〜3 は型が武器ごとに確認できないため 数値なし (種類数のみ計上)
-            "EXOP(H)": { HP: 25, 威力: 4.54, 下限: 2.0 },
-            "EXOP(P)": { PP: 3, 威力: 4.54, 下限: 2.0 },
-            "EXOP(X)": { HP: 15, PP: 2, 威力: 4.54, 下限: 2.0 },
-            "EXOP(D)": { 威力: 4.54, 下限: 2.0, ダ耐: 1.0 },
-            "EXOP(R)": { 威力: 4.54, 下限: 2.0, 状態: 5 },
+        };
 
+        // EX特殊能力 型ロール共通効果 (swiki「EX特殊能力」ページ: Ⅲ共通威力とは別に各 EX枠に付くボーナス)
+        // H: HP+25 / P: PP+3 / X: HP+15・PP+2 / D: ダメージ耐性+1% / R: 全ダウン耐性+5% / A(EXA): HP+25・PP+3
+        const EXOP_TYPE_STATS = {
+            H: { HP: 25 },
+            P: { PP: 3 },
+            X: { HP: 15, PP: 2 },
+            D: { ダ耐: 1 },
+            R: { ダウン耐: 5 },
+            A: { HP: 25, PP: 3 }
         };
 
         const STAT_LABELS = [
             ["HP", ""], ["PP", ""],
             ["威力", "%"], ["打撃", "%"], ["射撃", "%"], ["法撃", "%"],
-            ["下限", "%"], ["クリ", "%"], ["ダ耐", "%"], ["状態", "%"], ["環境", "%"]
+            ["下限", "%"], ["クリ", "%"], ["ダ耐", "%"], ["ダウン耐", "%"], ["状態", "%"], ["環境", "%"]
         ];
 
         const EQUIPMENTS = [
@@ -597,17 +599,57 @@
                         </div>
 
                         ${eq.isWeapon ? `
-                        <div class="mb-4 bg-black/20 p-2.5 rounded-lg border border-white/10 flex items-center justify-between h-[42px]">
-                            <span class="text-xs text-amber-300 font-medium flex items-center gap-1.5">
-                                <i class="fa-solid fa-bolt"></i> EXOP1~3 自動入力
-                            </span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="exop-toggle" onchange="toggleExop(this.checked)" class="sr-only peer">
-                                <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-600"></div>
-                            </label>
+                        <div class="mb-4 bg-black/20 p-2.5 rounded-lg border border-white/10">
+                            <div class="flex items-center justify-between h-[42px]">
+                                <span class="text-xs text-amber-300 font-medium flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bolt"></i> EXOP1~3 自動入力
+                                </span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="exop-toggle" onchange="toggleExop(this.checked)" class="sr-only peer">
+                                    <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-600"></div>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between h-[42px] border-t border-white/10">
+                                <span class="text-xs text-amber-300 font-medium flex items-center gap-1.5">
+                                    <i class="fa-solid fa-crosshairs"></i> EXⅢ 手動入力
+                                </span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="${eq.id}-exmanual-on" onchange="toggleExManual('${eq.id}', this.checked)" class="sr-only peer">
+                                    <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                                </label>
+                            </div>
+                            <div id="${eq.id}-exmanual-grid" class="hidden border-t border-white/10 pt-2 pb-1">
+                                <div class="grid grid-cols-2 gap-2 items-end">
+                                    <div>
+                                        <label class="text-[10px] opacity-70 block mb-0.5">Ⅲ共通威力 (3枠ぶん)</label>
+                                        <select id="${eq.id}-expower" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                            <option value="">未選択</option>
+                                            <option value="6">威力+6.0%</option>
+                                            <option value="6.25">威力+6.25%</option>
+                                            <option value="6.5">威力+6.5%</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] opacity-70 block mb-0.5">型ロール (EX枠1〜3)</label>
+                                        <div class="grid grid-cols-3 gap-1">
+                                            ${[0, 1, 2].map(i => `
+                                            <select id="${eq.id}-extype-${i}" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                                <option value="">-</option>
+                                                <option value="H">H · HP+25</option>
+                                                <option value="P">P · PP+3</option>
+                                                <option value="X">X · HP15 PP2</option>
+                                                <option value="D">D · ダ耐+1%</option>
+                                                <option value="R">R · 全ダウン耐+5%</option>
+                                                <option value="A">A · HP25 PP3</option>
+                                            </select>`).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] opacity-60 mt-1.5">威力下限補正+2% は3枠ぶん自動加算。種類数のカウントは「EXOP1~3 自動入力」と併用してください</div>
+                            </div>
                         </div>
                         ` : `
-                        <div class="mb-4 h-[42px]"></div>
+                        <div class="mb-4 h-[84px]"></div>
                         `}
 
                         <div class="space-y-2">
@@ -668,10 +710,30 @@
             toggle.checked = matched;
         }
 
+        // EXⅢ 手動入力パネルの開閉
+        function toggleExManual(eqId, enabled) {
+            const grid = document.getElementById(`${eqId}-exmanual-grid`);
+            if (grid) grid.classList.toggle("hidden", !enabled);
+            calculateSummary();
+        }
+
         function clearEquipment(eqId) {
             for (let i = 0; i < 8; i++) {
                 const select = document.getElementById(`${eqId}-slot-${i}`);
                 if (select) select.value = "";
+            }
+            // EXⅢ 手動入力もリセット
+            const man = document.getElementById(`${eqId}-exmanual-on`);
+            if (man) {
+                man.checked = false;
+                const grid = document.getElementById(`${eqId}-exmanual-grid`);
+                if (grid) grid.classList.add("hidden");
+                const power = document.getElementById(`${eqId}-expower`);
+                if (power) power.value = "";
+                for (let i = 0; i < 3; i++) {
+                    const ts = document.getElementById(`${eqId}-extype-${i}`);
+                    if (ts) ts.value = "";
+                }
             }
             calculateSummary();
         }
@@ -701,6 +763,15 @@
                     const select = document.getElementById(`${eq.id}-slot-${i}`);
                     state[eq.id].push(select ? select.value : "");
                 }
+                // EXⅢ 手動入力の状態も保存
+                const on = document.getElementById(`${eq.id}-exmanual-on`);
+                if (on) {
+                    state[`${eq.id}#ex`] = {
+                        on: on.checked,
+                        power: document.getElementById(`${eq.id}-expower`).value,
+                        types: [0, 1, 2].map(i => document.getElementById(`${eq.id}-extype-${i}`).value)
+                    };
+                }
             });
             return state;
         }
@@ -712,6 +783,22 @@
                     for (let i = 0; i < 8; i++) {
                         const select = document.getElementById(`${eq.id}-slot-${i}`);
                         if (select) select.value = state[eq.id][i] || "";
+                    }
+                }
+                // EXⅢ 手動入力の復元
+                const ex = state[`${eq.id}#ex`];
+                if (ex) {
+                    const on = document.getElementById(`${eq.id}-exmanual-on`);
+                    const grid = document.getElementById(`${eq.id}-exmanual-grid`);
+                    const power = document.getElementById(`${eq.id}-expower`);
+                    if (on) on.checked = !!ex.on;
+                    if (grid) grid.classList.toggle("hidden", !on || !on.checked);
+                    if (power && ex.power) power.value = ex.power;
+                    if (ex.types) {
+                        ex.types.forEach((v, i) => {
+                            const ts = document.getElementById(`${eq.id}-extype-${i}`);
+                            if (ts) ts.value = v || "";
+                        });
                     }
                 }
             });
@@ -735,6 +822,20 @@
                             for (const k in st) statTotals[k] = (statTotals[k] || 0) + st[k];
                         }
                     }
+                }
+            });
+
+            // EXⅢ 手動入力 (武器ごと: 共通威力×3枠 + 下限+2%×3枠 + 型ロールぶん)
+            EQUIPMENTS.forEach(eq => {
+                const on = document.getElementById(`${eq.id}-exmanual-on`);
+                if (!on || !on.checked) return;
+                const pow = parseFloat(document.getElementById(`${eq.id}-expower`).value) || 0;
+                if (pow) statTotals["威力"] = (statTotals["威力"] || 0) + pow * 3;
+                statTotals["下限"] = (statTotals["下限"] || 0) + 6; // 下限+2% ×3枠
+                for (let i = 0; i < 3; i++) {
+                    const ts = document.getElementById(`${eq.id}-extype-${i}`);
+                    const bt = ts && ts.value ? EXOP_TYPE_STATS[ts.value] : null;
+                    if (bt) for (const k in bt) statTotals[k] = (statTotals[k] || 0) + bt[k];
                 }
             });
 
