@@ -365,6 +365,17 @@
             { id: "armor3", name: "防具 3", isWeapon: false }
         ];
 
+        // 防具ユニット一覧 (swiki「防具」ページの実装履歴より。出典時点の最新実装は ディケイムアーマⅣ まで収録)
+        // ・選択はメモ用 (スロットの数値合算には影響しない)。選択状態は自動保存される
+        const UNIT_GROUPS = [
+            { label: "2026", units: ["ディケイムアーマⅣ", "エヴァルトアーマ", "ベルフェスアーマ", "ベルフェスアーマ・ヴィオ"] },
+            { label: "2025", units: ["フォルタスアーマ", "エスクルアーマ", "エスクルアーマ・リゼ", "プラグルアーマ", "ディケイムアーマⅡ", "アコルタシスアーマ", "アコルタシスアーマ・ヴィオ", "アコルタシスアーマ・ヴィダ"] },
+            { label: "2024", units: ["トレスタシスアーマ", "トレスタシスアーマ・ヴィオ", "トレスタシスアーマ・ヴィダ", "ドースタシスアーマ", "ドースタシスアーマ・ヴィオ", "ドースタシスアーマ・ヴィダ", "エクタシスアーマ", "エイネアアーマ", "エイネアアーマ・ヴィオ", "エイネアアーマ・ヴィダ", "エイネアアーマ・アルガ", "エイネアアーマ・ベルタ", "エイネアアーマ・ツェザ"] },
+            { label: "2023", units: ["N-EXPアーマⅡ", "エフィスタントアーマ", "オクトスアーマ", "オクトスアーマ・ヴィオ", "オクトスアーマ・ツェザ", "オクトスアーマ・ベルタ", "オクトスアーマ・アルガ", "ゴルドプリムアーマⅡ", "イグゼトアーマ", "エイジャクスアーマ"] },
+            { label: "2022", units: ["レクレールアーマ", "エンファタスアーマ", "エンファタスアーマ・ヴィオ", "エンファタスアーマ・ヴィダ", "エフィタスアーマ", "エフィタスアーマ・アルガ", "エフィタスアーマ・ベルタ", "エフィタスアーマ・ツェザ", "ディフローザアーマ", "ディフロージスアーマ", "セスタトアーマ", "セスタトアーマ・アルガ", "セスタトアーマ・ツェザ", "セスタトアーマ・ベルタ", "ベルグリンアーマ", "レネッサアーマ", "N-EXPアーマ", "シュヴァルゼストアーマ", "シュヴァルガルデアーマ", "シュヴァルロッゾアーマ"] },
+            { label: "2021", units: ["ヴィオースアーマ", "ヴェフスアーマ", "ヴェフスアーマ・アルガ", "ヴェフスアーマ・ツェザ", "ヴェフスアーマ・ベルタ", "ヴィダールアーマ", "ヴィオーセルアーマ", "ヴィダーレンアーマ", "グライアスアーマ", "シルヴァプリムアーマ", "ゴルドプリムアーマ", "ヴィアルトアーマ", "ヴィアルトアーマ・アルガ", "ヴィアルトアーマ・ツェザ", "ヴィアルトアーマ・ベルタ", "ジオントアーマ", "クアルデアーマ", "クアルデアーマ・アルガ", "クアルデアーマ・ツェザ", "クアルデアーマ・ベルタ", "キャトリアアーマ", "プリムアーマ", "ツヴィアアーマ", "テルセウスアーマ"] }
+        ];
+
         const THEME_KEY = "ngs_calc_theme";
         const CUSTOM_DATA_KEY = "ngs_calc_custom_abilities";
 
@@ -652,7 +663,18 @@
                             </div>
                         </div>
                         ` : `
-                        <div class="mb-4 h-[84px]"></div>
+                        <div class="mb-4 bg-black/20 p-2.5 rounded-lg border border-white/10 flex items-center justify-between gap-2">
+                            <span class="text-xs text-emerald-300 font-medium flex items-center gap-1.5 shrink-0">
+                                <i class="fa-solid fa-vest"></i> ユニット
+                            </span>
+                            <select id="${eq.id}-unit" onchange="calculateSummary()" class="ability-select flex-1 min-w-0 rounded-lg text-xs md:text-sm p-2 focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer">
+                                <option value="">-- ユニット未選択 --</option>
+                                ${UNIT_GROUPS.map(g => `
+                                <optgroup label="${g.label}">
+                                    ${g.units.map(u => `<option value="${u}">${u}</option>`).join('')}
+                                </optgroup>`).join('')}
+                            </select>
+                        </div>
                         `}
 
                         <div class="space-y-2">
@@ -739,6 +761,9 @@
                     const ts = document.getElementById(`${eqId}-extype-${i}`);
                     if (ts) ts.value = "";
                 }
+                // ユニット選択もリセット
+                const unitSel = document.getElementById(`${eqId}-unit`);
+                if (unitSel) unitSel.value = "";
             }
             calculateSummary();
         }
@@ -777,6 +802,9 @@
                         types: [0, 1, 2].map(i => document.getElementById(`${eq.id}-extype-${i}`).value)
                     };
                 }
+                // 防具ユニット選択も保存
+                const unitSel = document.getElementById(`${eq.id}-unit`);
+                if (unitSel) state[`${eq.id}#unit`] = unitSel.value;
             });
             return state;
         }
@@ -810,6 +838,9 @@
                         });
                     }
                 }
+                // 防具ユニット選択の復元
+                const unitSel = document.getElementById(`${eq.id}-unit`);
+                if (unitSel && state[`${eq.id}#unit`] !== undefined) unitSel.value = state[`${eq.id}#unit`] || "";
             });
             calculateSummary();
         }
