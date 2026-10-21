@@ -208,7 +208,7 @@
         //    ・HP / PP は絶対値、威力 / 打撃 / 射撃 / 法撃 / 下限 / クリ / ダ耐 / 状態 / 環境 は % 表記
         //    ・「S」は原種と同じ数値、「MNS」は「MN」と同じ数値として計上
         //    ・EXOP1〜3 は種類数のみ計上。EXⅢ の数値は「EXⅢ 手動入力」で
-        //      共通威力 (6.0/6.25/6.5% ×3枠) と型ロール (H/P/X/D/R/A) を加算
+        //      枠ごとの威力 (6.0/6.25/6.5% 三択) と型ロール (H/P/X/D/R/A) を加算
         //    ・数値未収録の「エミスギガス･マエスティ」とカスタム能力は未登録 (集計から除外される)
         //    ・※ 既存の能力名を変更すると選択状態が復元できなくなるため、キーは能力名そのまま
         // ============================================================
@@ -619,15 +619,18 @@
                                 </label>
                             </div>
                             <div id="${eq.id}-exmanual-grid" class="hidden border-t border-white/10 pt-2 pb-1">
-                                <div class="grid grid-cols-2 gap-2 items-end">
+                                <div class="space-y-2">
                                     <div>
-                                        <label class="text-[10px] opacity-70 block mb-0.5">Ⅲ共通威力 (3枠ぶん)</label>
-                                        <select id="${eq.id}-expower" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
-                                            <option value="">未選択</option>
-                                            <option value="6">威力+6.0%</option>
-                                            <option value="6.25">威力+6.25%</option>
-                                            <option value="6.5">威力+6.5%</option>
-                                        </select>
+                                        <label class="text-[10px] opacity-70 block mb-0.5">枠ごとの威力 (EX枠1〜3・枠ごとに三択)</label>
+                                        <div class="grid grid-cols-3 gap-1">
+                                            ${[0, 1, 2].map(i => `
+                                            <select id="${eq.id}-expower-${i}" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                                <option value="">-</option>
+                                                <option value="6">威力6.0%</option>
+                                                <option value="6.25">威力6.25%</option>
+                                                <option value="6.5">威力6.5%</option>
+                                            </select>`).join('')}
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="text-[10px] opacity-70 block mb-0.5">型ロール (EX枠1〜3)</label>
@@ -645,7 +648,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="text-[10px] opacity-60 mt-1.5">威力下限補正+2% は3枠ぶん自動加算。種類数のカウントは「EXOP1~3 自動入力」と併用してください</div>
+                                <div class="text-[10px] opacity-60 mt-1.5">威力を選択した枠ぶん「威力+選択値 / 下限+2%」を自動加算。種類数のカウントは「EXOP1~3 自動入力」と併用してください</div>
                             </div>
                         </div>
                         ` : `
@@ -728,8 +731,10 @@
                 man.checked = false;
                 const grid = document.getElementById(`${eqId}-exmanual-grid`);
                 if (grid) grid.classList.add("hidden");
-                const power = document.getElementById(`${eqId}-expower`);
-                if (power) power.value = "";
+                for (let i = 0; i < 3; i++) {
+                    const ps = document.getElementById(`${eqId}-expower-${i}`);
+                    if (ps) ps.value = "";
+                }
                 for (let i = 0; i < 3; i++) {
                     const ts = document.getElementById(`${eqId}-extype-${i}`);
                     if (ts) ts.value = "";
@@ -768,7 +773,7 @@
                 if (on) {
                     state[`${eq.id}#ex`] = {
                         on: on.checked,
-                        power: document.getElementById(`${eq.id}-expower`).value,
+                        powers: [0, 1, 2].map(i => document.getElementById(`${eq.id}-expower-${i}`).value),
                         types: [0, 1, 2].map(i => document.getElementById(`${eq.id}-extype-${i}`).value)
                     };
                 }
@@ -790,10 +795,14 @@
                 if (ex) {
                     const on = document.getElementById(`${eq.id}-exmanual-on`);
                     const grid = document.getElementById(`${eq.id}-exmanual-grid`);
-                    const power = document.getElementById(`${eq.id}-expower`);
                     if (on) on.checked = !!ex.on;
                     if (grid) grid.classList.toggle("hidden", !on || !on.checked);
-                    if (power && ex.power) power.value = ex.power;
+                    // 旧形式 (共通威力単一値) は全枠に引き継ぐ
+                    const powers = ex.powers || (ex.power ? [ex.power, ex.power, ex.power] : ["", "", ""]);
+                    powers.forEach((v, i) => {
+                        const ps = document.getElementById(`${eq.id}-expower-${i}`);
+                        if (ps) ps.value = v || "";
+                    });
                     if (ex.types) {
                         ex.types.forEach((v, i) => {
                             const ts = document.getElementById(`${eq.id}-extype-${i}`);
@@ -829,9 +838,13 @@
             EQUIPMENTS.forEach(eq => {
                 const on = document.getElementById(`${eq.id}-exmanual-on`);
                 if (!on || !on.checked) return;
-                const pow = parseFloat(document.getElementById(`${eq.id}-expower`).value) || 0;
-                if (pow) statTotals["威力"] = (statTotals["威力"] || 0) + pow * 3;
-                statTotals["下限"] = (statTotals["下限"] || 0) + 6; // 下限+2% ×3枠
+                [0, 1, 2].forEach(i => {
+                    const pow = parseFloat(document.getElementById(`${eq.id}-expower-${i}`).value) || 0;
+                    if (pow) {
+                        statTotals["威力"] = (statTotals["威力"] || 0) + pow;
+                        statTotals["下限"] = (statTotals["下限"] || 0) + 2; // 威力下限補正+2% (枠ぶん)
+                    }
+                });
                 for (let i = 0; i < 3; i++) {
                     const ts = document.getElementById(`${eq.id}-extype-${i}`);
                     const bt = ts && ts.value ? EXOP_TYPE_STATS[ts.value] : null;
