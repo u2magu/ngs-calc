@@ -156,6 +156,75 @@
                     </div>
                 </div>
                 <div id="amulet-power-note" class="text-[10px] opacity-60 mt-1"></div>
+                <div class="flex items-center justify-between h-[36px] mt-2 border-t border-white/10">
+                    <span class="text-xs text-amber-300 font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-crosshairs"></i> OP (EXⅢ) 手動入力
+                    </span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="amulet-exmanual-on" onchange="toggleExManual('amulet', this.checked)" class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                    </label>
+                </div>
+                <div id="amulet-exmanual-grid" class="hidden border-t border-white/10 pt-2 pb-1">
+                    <div class="space-y-2">
+                        <div>
+                            <label class="text-[10px] opacity-70 block mb-0.5">枠ごとの威力 (OP枠1〜3・枠ごとに三択)</label>
+                            <div class="grid grid-cols-3 gap-1">
+                                <select id="amulet-expower-0" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                    <option value="">-</option>
+                                    <option value="6">威力6.0%</option>
+                                    <option value="6.25">威力6.25%</option>
+                                    <option value="6.5">威力6.5%</option>
+                                </select>
+                                <select id="amulet-expower-1" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                    <option value="">-</option>
+                                    <option value="6">威力6.0%</option>
+                                    <option value="6.25">威力6.25%</option>
+                                    <option value="6.5">威力6.5%</option>
+                                </select>
+                                <select id="amulet-expower-2" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                    <option value="">-</option>
+                                    <option value="6">威力6.0%</option>
+                                    <option value="6.25">威力6.25%</option>
+                                    <option value="6.5">威力6.5%</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] opacity-70 block mb-0.5">型ロール (OP枠1〜3)</label>
+                            <div class="grid grid-cols-3 gap-1">
+                                <select id="amulet-extype-0" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                    <option value="">-</option>
+                                    <option value="H">H · HP+25</option>
+                                    <option value="P">P · PP+3</option>
+                                    <option value="X">X · HP15 PP2</option>
+                                    <option value="D">D · ダ耐+1%</option>
+                                    <option value="R">R · 全ダウン耐+5%</option>
+                                    <option value="A">A · HP25 PP3</option>
+                                </select>
+                                <select id="amulet-extype-1" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                    <option value="">-</option>
+                                    <option value="H">H · HP+25</option>
+                                    <option value="P">P · PP+3</option>
+                                    <option value="X">X · HP15 PP2</option>
+                                    <option value="D">D · ダ耐+1%</option>
+                                    <option value="R">R · 全ダウン耐+5%</option>
+                                    <option value="A">A · HP25 PP3</option>
+                                </select>
+                                <select id="amulet-extype-2" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                                    <option value="">-</option>
+                                    <option value="H">H · HP+25</option>
+                                    <option value="P">P · PP+3</option>
+                                    <option value="X">X · HP15 PP2</option>
+                                    <option value="D">D · ダ耐+1%</option>
+                                    <option value="R">R · 全ダウン耐+5%</option>
+                                    <option value="A">A · HP25 PP3</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] opacity-60 mt-1.5">威力を選択した枠ぶん「威力+選択値 / 下限+2%」を自動加算。手持ちの OP 枠数に合わせて残りは未選択のままでOK</div>
+                </div>
             </div>
         </section>
 
@@ -262,6 +331,7 @@
         //    ・「S」は原種と同じ数値、「MNS」は「MN」と同じ数値として計上
         //    ・EXOP1〜3 は種類数のみ計上。EXⅢ の数値は「EXⅢ 手動入力」で
         //      枠ごとの威力 (6.0/6.25/6.5% 三択) と型ロール (H/P/X/D/R/A) を加算
+        //    ・アミュレットの OP (EX特殊能力) も同方式。「OP (EXⅢ) 手動入力」アミュレットパネルから加算
         //    ・スキルリング (威力系 タイプ1・強化+0〜+5) とアミュレット (共通プリセットLv.1〜5) の
         //      常時威力も合算に含む (条件付き追加分はステータス表記に反映されないため計上しない)
         //    ・数値未収録の「エミスギガス･マエスティ」とカスタム能力は未登録 (集計から除外される)
@@ -802,6 +872,23 @@
             toggle.checked = matched;
         }
 
+        // EXⅢ 手動入力 (威力/型ロール) の合算処理。prefix は要素 ID の接頭辞 (武器は eq.id、アミュレットは "amulet")
+        // ・威力を選択した枠ぶん「威力+選択値 / 下限+2%」・型ロールは各枠ぶん加算
+        function applyExManual(prefix, statTotals) {
+            const on = document.getElementById(`${prefix}-exmanual-on`);
+            if (!on || !on.checked) return;
+            [0, 1, 2].forEach(i => {
+                const pow = parseFloat(document.getElementById(`${prefix}-expower-${i}`).value) || 0;
+                if (pow) {
+                    statTotals["威力"] = (statTotals["威力"] || 0) + pow;
+                    statTotals["下限"] = (statTotals["下限"] || 0) + 2; // 威力下限補正+2% (枠ぶん)
+                }
+                const ts = document.getElementById(`${prefix}-extype-${i}`);
+                const bt = ts && ts.value ? EXOP_TYPE_STATS[ts.value] : null;
+                if (bt) for (const k in bt) statTotals[k] = (statTotals[k] || 0) + bt[k];
+            });
+        }
+
         // EXⅢ 手動入力パネルの開閉
         function toggleExManual(eqId, enabled) {
             const grid = document.getElementById(`${eqId}-exmanual-grid`);
@@ -837,6 +924,19 @@
             if (rn) rn.value = "";
             if (stSel) stSel.value = "0";
             if (am) am.value = "0";
+            // アミュレット OP (EXⅢ 手動) もリセット
+            const amOn = document.getElementById("amulet-exmanual-on");
+            if (amOn) {
+                amOn.checked = false;
+                const amGrid = document.getElementById("amulet-exmanual-grid");
+                if (amGrid) amGrid.classList.add("hidden");
+            }
+            for (let i = 0; i < 3; i++) {
+                const ps = document.getElementById(`amulet-expower-${i}`);
+                const ts = document.getElementById(`amulet-extype-${i}`);
+                if (ps) ps.value = "";
+                if (ts) ts.value = "";
+            }
             updateExtraNotes();
         }
 
@@ -909,6 +1009,13 @@
             if (ringNameEl) state["#ring"] = { name: ringNameEl.value, st: document.getElementById("ring-st").value };
             const amuletEl = document.getElementById("amulet-lv");
             if (amuletEl) state["#amulet"] = amuletEl.value;
+            // アミュレット OP (EXⅢ 手動) も保存
+            const amOn = document.getElementById("amulet-exmanual-on");
+            if (amOn) state["#amuletex"] = {
+                on: amOn.checked,
+                powers: [0, 1, 2].map(i => document.getElementById(`amulet-expower-${i}`).value),
+                types: [0, 1, 2].map(i => document.getElementById(`amulet-extype-${i}`).value)
+            };
             return state;
         }
 
@@ -956,6 +1063,22 @@
                 const am = document.getElementById("amulet-lv");
                 if (am) am.value = state["#amulet"] || "0";
             }
+            // アミュレット OP (EXⅢ 手動) の復元
+            if (state["#amuletex"]) {
+                const ex = state["#amuletex"];
+                const amOn = document.getElementById("amulet-exmanual-on");
+                const amGrid = document.getElementById("amulet-exmanual-grid");
+                if (amOn) amOn.checked = !!ex.on;
+                if (amGrid) amGrid.classList.toggle("hidden", !amOn || !amOn.checked);
+                (ex.powers || ["", "", ""]).forEach((v, i) => {
+                    const ps = document.getElementById(`amulet-expower-${i}`);
+                    if (ps) ps.value = v || "";
+                });
+                (ex.types || []).forEach((v, i) => {
+                    const ts = document.getElementById(`amulet-extype-${i}`);
+                    if (ts) ts.value = v || "";
+                });
+            }
             calculateSummary();
         }
 
@@ -979,23 +1102,9 @@
                 }
             });
 
-            // EXⅢ 手動入力 (武器ごと: 共通威力×3枠 + 下限+2%×3枠 + 型ロールぶん)
-            EQUIPMENTS.forEach(eq => {
-                const on = document.getElementById(`${eq.id}-exmanual-on`);
-                if (!on || !on.checked) return;
-                [0, 1, 2].forEach(i => {
-                    const pow = parseFloat(document.getElementById(`${eq.id}-expower-${i}`).value) || 0;
-                    if (pow) {
-                        statTotals["威力"] = (statTotals["威力"] || 0) + pow;
-                        statTotals["下限"] = (statTotals["下限"] || 0) + 2; // 威力下限補正+2% (枠ぶん)
-                    }
-                });
-                for (let i = 0; i < 3; i++) {
-                    const ts = document.getElementById(`${eq.id}-extype-${i}`);
-                    const bt = ts && ts.value ? EXOP_TYPE_STATS[ts.value] : null;
-                    if (bt) for (const k in bt) statTotals[k] = (statTotals[k] || 0) + bt[k];
-                }
-            });
+            // EXⅢ 手動入力 (武器ごと + アミュレット)
+            EQUIPMENTS.forEach(eq => applyExManual(eq.id, statTotals));
+            applyExManual("amulet", statTotals);
 
             // スキルリング (威力系 タイプ1) とアミュレットの威力
             const ringName = document.getElementById("ring-name");
