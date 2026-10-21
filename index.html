@@ -98,13 +98,66 @@
                 </button>
             </div>
             <div class="sm:col-span-3 bg-black/20 p-2.5 rounded-lg border border-white/10 text-left">
-                <div class="text-[11px] opacity-70 mb-1">数値合算 (全装備ぶんの累計・S は原種と同数値 / MNS は MN と同数値 / EXⅢ は「EXⅢ 手動入力」から計上)</div>
+                <div class="text-[11px] opacity-70 mb-1">数値合算 (全装備ぶんの累計・S は原種と同数値 / MNS は MN と同数値 / EXⅢ・リング・アミュレット は専用パネルから計上)</div>
                 <div id="stat-totals" class="flex flex-wrap gap-1.5 text-xs font-semibold text-cyan-200 text-left"><span class="opacity-50 text-xs">未選択</span></div>
             </div>
         </section>
 
         <!-- トースト通知 -->
         <div id="toast-message" class="fixed bottom-5 right-5 bg-cyan-600 text-white px-4 py-2 rounded-lg shadow-xl text-xs font-semibold opacity-0 transition-opacity duration-300 pointer-events-none z-50"></div>
+
+        <!-- スキルリング・アミュレット (威力のみ計上) -->
+        <section class="card rounded-xl p-3 md:p-4 border shadow-lg mb-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="bg-black/20 p-2.5 rounded-lg border border-white/10">
+                <div class="text-[11px] opacity-70 mb-1.5">スキルリング (威力系 タイプ1・1個のみ装備可)</div>
+                <div class="flex flex-wrap gap-2 items-end">
+                    <div class="flex-1 min-w-[160px]">
+                        <label class="text-[10px] opacity-70 block mb-0.5">リング</label>
+                        <select id="ring-name" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs md:text-sm p-2 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                            <option value="">-- 未選択 --</option>
+                            <option value="タイプ1／キリングライズ">タイプ1／キリングライズ</option>
+                            <option value="タイプ1／スウィッシュライズ">タイプ1／スウィッシュライズ</option>
+                            <option value="タイプ1／HPキープライズ">タイプ1／HPキープライズ</option>
+                            <option value="タイプ1／アンダーPPライズ">タイプ1／アンダーPPライズ</option>
+                            <option value="タイプ1／ペイシェントライズ">タイプ1／ペイシェントライズ</option>
+                            <option value="タイプ1／ディフィートライズ">タイプ1／ディフィートライズ</option>
+                            <option value="タイプ1／フォトンブラストライズ">タイプ1／フォトンブラストライズ</option>
+                            <option value="タイプ1／カウントライズ">タイプ1／カウントライズ</option>
+                            <option value="タイプ1／シンプルアタック">タイプ1／シンプルアタック (強化不可)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] opacity-70 block mb-0.5">強化値</label>
+                        <select id="ring-st" onchange="calculateSummary()" class="ability-select rounded-lg text-xs md:text-sm p-2 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                            <option value="0">+0 (無強化)</option>
+                            <option value="1">+1</option>
+                            <option value="2">+2</option>
+                            <option value="3">+3</option>
+                            <option value="4">+4</option>
+                            <option value="5">+5</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="ring-power-note" class="text-[10px] opacity-60 mt-1"></div>
+            </div>
+            <div class="bg-black/20 p-2.5 rounded-lg border border-white/10">
+                <div class="text-[11px] opacity-70 mb-1.5">アミュレット (1枠目 ネックレス)</div>
+                <div class="flex flex-wrap gap-2 items-end">
+                    <div class="min-w-[160px]">
+                        <label class="text-[10px] opacity-70 block mb-0.5">共通プリセットLv</label>
+                        <select id="amulet-lv" onchange="calculateSummary()" class="ability-select rounded-lg text-xs md:text-sm p-2 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                            <option value="0">-- 未選択 --</option>
+                            <option value="1">Lv.1 (威力+1%)</option>
+                            <option value="2">Lv.2 (威力+2%)</option>
+                            <option value="3">Lv.3 (威力+3%)</option>
+                            <option value="4">Lv.4 (威力+3.5%)</option>
+                            <option value="5">Lv.5 (威力+4%)</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="amulet-power-note" class="text-[10px] opacity-60 mt-1"></div>
+            </div>
+        </section>
 
         <div id="equipment-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Dynamic JavaScript Content -->
@@ -209,6 +262,8 @@
         //    ・「S」は原種と同じ数値、「MNS」は「MN」と同じ数値として計上
         //    ・EXOP1〜3 は種類数のみ計上。EXⅢ の数値は「EXⅢ 手動入力」で
         //      枠ごとの威力 (6.0/6.25/6.5% 三択) と型ロール (H/P/X/D/R/A) を加算
+        //    ・スキルリング (威力系 タイプ1・強化+0〜+5) とアミュレット (共通プリセットLv.1〜5) の
+        //      常時威力も合算に含む (条件付き追加分はステータス表記に反映されないため計上しない)
         //    ・数値未収録の「エミスギガス･マエスティ」とカスタム能力は未登録 (集計から除外される)
         //    ・※ 既存の能力名を変更すると選択状態が復元できなくなるため、キーは能力名そのまま
         // ============================================================
@@ -370,6 +425,23 @@
         const UNIT_GROUPS = [
             { label: "2026", units: ["サヴェルトアーマ", "サヴェルトアーマ・リゼ", "ディケイムアーマⅣ", "エヴァルトアーマ", "ベルフェスアーマ", "ベルフェスアーマ・ヴィオ"] }
         ];
+
+        // スキルリング タイプ1 の威力 (swiki「スキルリング」ページ。常時効果の表記威力のみ・条件付き追加分はステータス表記に反映されないため計上しない)
+        // 配列は +0〜+5 の威力%。「タイプ1／シンプルアタック」は強化不可 (常に+3%)
+        const RING_POWER = {
+            "タイプ1／キリングライズ": [2, 2.5, 3, 3.5, 3.75, 4],
+            "タイプ1／スウィッシュライズ": [2, 2.5, 3, 3.5, 3.75, 4],
+            "タイプ1／HPキープライズ": [3, 4, 5, 6, 6.5, 7],
+            "タイプ1／アンダーPPライズ": [2, 2.5, 3, 3.5, 3.75, 4],
+            "タイプ1／ペイシェントライズ": [3, 4, 5, 6, 6.5, 7],
+            "タイプ1／ディフィートライズ": [3, 4, 5, 6, 6.5, 7],
+            "タイプ1／フォトンブラストライズ": [3, 3.5, 4, 4.5, 4.75, 5],
+            "タイプ1／カウントライズ": [2, 2.5, 3, 3.5, 3.75, 4],
+            "タイプ1／シンプルアタック": [3, 3, 3, 3, 3, 3]
+        };
+
+        // アミュレット 共通プリセット能力の威力 [未選択, Lv.1 .. Lv.5] (swiki「アミュレット」ページ)
+        const AMULET_POWER = [0, 1, 2, 3, 3.5, 4];
 
         const THEME_KEY = "ngs_calc_theme";
         const CUSTOM_DATA_KEY = "ngs_calc_custom_abilities";
@@ -737,6 +809,37 @@
             calculateSummary();
         }
 
+        // スキルリング・アミュレットの威力表示更新 (calculateSummary から呼ばれる)
+        function updateExtraNotes() {
+            const ringNote = document.getElementById("ring-power-note");
+            if (ringNote) {
+                const rn = document.getElementById("ring-name");
+                const stSel = document.getElementById("ring-st");
+                let t = "";
+                if (rn && rn.value && RING_POWER[rn.value]) {
+                    const stv = parseInt(stSel ? stSel.value : "0", 10) || 0;
+                    t = `実効威力: +${RING_POWER[rn.value][Math.min(stv, 5)]}%`;
+                }
+                ringNote.textContent = t;
+            }
+            const amNote = document.getElementById("amulet-power-note");
+            if (amNote) {
+                const lv = parseInt(document.getElementById("amulet-lv").value, 10) || 0;
+                amNote.textContent = AMULET_POWER[lv] ? `実効威力: +${AMULET_POWER[lv]}%` : "";
+            }
+        }
+
+        // スキルリング・アミュレットの選択をリセット (全選択リセットから呼び出し)
+        function resetExtraEquipments() {
+            const rn = document.getElementById("ring-name");
+            const stSel = document.getElementById("ring-st");
+            const am = document.getElementById("amulet-lv");
+            if (rn) rn.value = "";
+            if (stSel) stSel.value = "0";
+            if (am) am.value = "0";
+            updateExtraNotes();
+        }
+
         function clearEquipment(eqId) {
             for (let i = 0; i < 8; i++) {
                 const select = document.getElementById(`${eqId}-slot-${i}`);
@@ -801,6 +904,11 @@
                 const unitSel = document.getElementById(`${eq.id}-unit`);
                 if (unitSel) state[`${eq.id}#unit`] = unitSel.value;
             });
+            // スキルリング・アミュレットも保存 (スロット配列と別キー)
+            const ringNameEl = document.getElementById("ring-name");
+            if (ringNameEl) state["#ring"] = { name: ringNameEl.value, st: document.getElementById("ring-st").value };
+            const amuletEl = document.getElementById("amulet-lv");
+            if (amuletEl) state["#amulet"] = amuletEl.value;
             return state;
         }
 
@@ -837,6 +945,17 @@
                 const unitSel = document.getElementById(`${eq.id}-unit`);
                 if (unitSel && state[`${eq.id}#unit`] !== undefined) unitSel.value = state[`${eq.id}#unit`] || "";
             });
+            // スキルリング・アミュレットの復元
+            if (state["#ring"]) {
+                const rn = document.getElementById("ring-name");
+                const stSel = document.getElementById("ring-st");
+                if (rn) rn.value = state["#ring"].name || "";
+                if (stSel) stSel.value = state["#ring"].st || "0";
+            }
+            if (state["#amulet"] !== undefined) {
+                const am = document.getElementById("amulet-lv");
+                if (am) am.value = state["#amulet"] || "0";
+            }
             calculateSummary();
         }
 
@@ -878,6 +997,17 @@
                 }
             });
 
+            // スキルリング (威力系 タイプ1) とアミュレットの威力
+            const ringName = document.getElementById("ring-name");
+            if (ringName && ringName.value && RING_POWER[ringName.value]) {
+                const stv = parseInt(document.getElementById("ring-st").value, 10) || 0;
+                const pv = RING_POWER[ringName.value][Math.min(stv, 5)] || 0;
+                if (pv) statTotals["威力"] = (statTotals["威力"] || 0) + pv;
+            }
+            const amLv = parseInt(document.getElementById("amulet-lv").value, 10) || 0;
+            if (AMULET_POWER[amLv]) statTotals["威力"] = (statTotals["威力"] || 0) + AMULET_POWER[amLv];
+            updateExtraNotes();
+
             document.getElementById("unique-count").textContent = uniqueAbilities.size;
             document.getElementById("filled-slots").textContent = `${filledCount} / 32`;
             renderStatTotals(statTotals);
@@ -917,6 +1047,7 @@
         function bindGlobalEvents() {
             document.getElementById("reset-all-btn").addEventListener("click", () => {
                 EQUIPMENTS.forEach(eq => clearEquipment(eq.id));
+                resetExtraEquipments();
                 showToast("全選択をリセットしました");
             });
 
