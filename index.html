@@ -162,7 +162,7 @@
                 <div id="amulet-power-note" class="text-[10px] opacity-60 mt-1"></div>
                 <div class="mt-2 border-t border-white/10 pt-2">
                     <label class="text-[10px] opacity-70 block mb-0.5">OP枠 (AM特殊能力・アミュレット専用の「AM」能力)</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5">
                         <select id="amulet-op-0" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
                             <option value="">OP枠1 未選択</option>
                             <option value="AMトリプル">AMトリプル · 威力+1%</option>
@@ -207,6 +207,27 @@
                         </select>
                         <select id="amulet-op-2" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
                             <option value="">OP枠3 未選択</option>
+                            <option value="AMトリプル">AMトリプル · 威力+1%</option>
+                            <option value="AMブロウ">AMブロウ · 打+1%</option>
+                            <option value="AMショット">AMショット · 射+1%</option>
+                            <option value="AMテック">AMテック · 法+1%</option>
+                            <option value="AMブロウショット">AMブロウショット · 打射+1%</option>
+                            <option value="AMブロウテック">AMブロウテック · 打法+1%</option>
+                            <option value="AMショットテック">AMショットテック · 射法+1%</option>
+                            <option value="AMフィジカル">AMフィジカル · HP+30</option>
+                            <option value="AMフォトン">AMフォトン · PP+4</option>
+                            <option value="AMフィジトン">AMフィジトン · HP15 PP2</option>
+                            <option value="AMディフェンド">AMディフェンド · ダ耐+1%</option>
+                            <option value="AMペインバリア">AMペインバリア · 物理ダウン耐+10%</option>
+                            <option value="AMバーンバリア">AMバーンバリア · バーン耐+10%</option>
+                            <option value="AMフリーズバリア">AMフリーズバリア · フリーズ耐+10%</option>
+                            <option value="AMショックバリア">AMショックバリア · ショック耐+10%</option>
+                            <option value="AMボイスバリア">AMボイスバリア · ボイス耐+10%</option>
+                            <option value="AMミラージュバリア">AMミラージュバリア · ミラージュ耐+10%</option>
+                            <option value="AMパニックバリア">AMパニックバリア · パニック耐+10%</option>
+                        </select>
+                        <select id="amulet-op-3" onchange="calculateSummary()" class="ability-select w-full rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-cyan-500 appearance-none cursor-pointer">
+                            <option value="">OP枠4 未選択</option>
                             <option value="AMトリプル">AMトリプル · 威力+1%</option>
                             <option value="AMブロウ">AMブロウ · 打+1%</option>
                             <option value="AMショット">AMショット · 射+1%</option>
@@ -339,7 +360,7 @@
         //    ・「S」は原種と同じ数値、「MNS」は「MN」と同じ数値として計上
         //    ・EXOP1〜3 は種類数のみ計上。EXⅢ の数値は「EXⅢ 手動入力」で
         //      枠ごとの威力 (6.0/6.25/6.5% 三択) と型ロール (H/P/X/D/R/A) を加算
-        //    ・アミュレットの OP は専用の「AM」特殊能力 (AM_OP_STATS)。OP枠 1〜3 ぶん加算
+        //    ・アミュレットの OP は専用の「AM」特殊能力 (AM_OP_STATS)。OP枠 1〜4 ぶん加算
         //    ・スキルリング (威力系 タイプ1・強化+0〜+5) とアミュレット (共通プリセットLv.1〜5) の
         //      常時威力も合算に含む (条件付き追加分はステータス表記に反映されないため計上しない)
         //    ・数値未収録の「エミスギガス･マエスティ」とカスタム能力は未登録 (集計から除外される)
@@ -957,7 +978,7 @@
             if (stSel) stSel.value = "0";
             if (am) am.value = "0";
             // アミュレット OP (AM特殊能力) もリセット
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 4; i++) {
                 const sel = document.getElementById(`amulet-op-${i}`);
                 if (sel) sel.value = "";
             }
@@ -1034,7 +1055,7 @@
             const amuletEl = document.getElementById("amulet-lv");
             if (amuletEl) state["#amulet"] = amuletEl.value;
             // アミュレット OP (AM特殊能力) も保存
-            state["#amuletop"] = [0, 1, 2].map(i => document.getElementById(`amulet-op-${i}`).value);
+            state["#amuletop"] = [0, 1, 2, 3].map(i => document.getElementById(`amulet-op-${i}`).value);
             return state;
         }
 
@@ -1112,10 +1133,10 @@
                 }
             });
 
-            // EXⅢ 手動入力 (武器ごと + アミュレット)
+            // EXⅢ 手動入力 (武器ごと)
             EQUIPMENTS.forEach(eq => applyExManual(eq.id, statTotals));
             // アミュレット OP (AM特殊能力)
-            [0, 1, 2].forEach(i => {
+            [0, 1, 2, 3].forEach(i => {
                 const sel = document.getElementById(`amulet-op-${i}`);
                 const st = sel && sel.value ? AM_OP_STATS[sel.value] : null;
                 if (st) for (const k in st) statTotals[k] = (statTotals[k] || 0) + st[k];
